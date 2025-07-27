@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 import json
 from typing import List, Optional
@@ -62,7 +63,7 @@ def load_and_ingest_by_paragraph(file_path: str, overlap_ratio: float = 0.0):
 
 
 # ==== 检索文档 ====
-def search(query: str, top_k: int = 5) -> List[str]:
+def search(query: str, top_k: int = 3) -> List[str]:
     logger.info(f"[Search] 查询: {query}")
     embedding = get_embedding([query])[0]
     results = client.search(
@@ -83,7 +84,7 @@ app = FastAPI()
 
 class QueryRequest(BaseModel):
     query: str
-    top_k: Optional[int] = 5
+    top_k: Optional[int] = 3
 
 class DocInput(BaseModel):
     text: str
@@ -129,7 +130,7 @@ def test_local_rag(data_path: str):
     logger.info("==== 本地测试开始 ====")
     try:
         load_and_ingest_by_paragraph(data_path, overlap_ratio=0.0)
-        query = "查询曹孚老师"
+        query = "夏炎老师是什么时候入党的"
         context = search(query)
         logger.info("=== 检索片段 ===")
         for i, doc in enumerate(context, 1):
@@ -142,5 +143,5 @@ def test_local_rag(data_path: str):
 
 
 if __name__ == "__main__":
-    data_path = "data/test_masters.md"
+    data_path = "data/masters_ecnu.md"
     test_local_rag(data_path)
