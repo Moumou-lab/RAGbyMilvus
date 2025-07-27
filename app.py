@@ -115,6 +115,7 @@ def ingest_file(spec: BaseModel):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+
 # ==== 本地测试函数 ====
 def test_local_rag(data_path: str):
     logger.info("==== 本地测试开始 ====")
@@ -130,7 +131,6 @@ def test_local_rag(data_path: str):
     except Exception as e:
         logger.error(f"[Test] 本地测试失败: {e}")
     logger.info("==== 本地测试结束 ====")
-
 
 if __name__ == "__main__":
     data_path = "data/masters_ecnu.md"
