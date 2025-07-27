@@ -10,6 +10,7 @@ import requests
 from pymilvus import MilvusClient
 
 from config.config import *
+from client_init import milvus_client_init
 from my_models.chat_model import chat_generate
 from my_models.embed_model import get_embedding
 
@@ -17,21 +18,10 @@ from my_models.embed_model import get_embedding
 logger.add(sink=sys.stderr, level="INFO", format="{time} | {level} | {message}")
 logger.info("初始化 Milvus 客户端...")
 
-client = MilvusClient(DB_FILE)
-if not client.has_collection(COLLECTION_NAME):
-    logger.info(f"集合 {COLLECTION_NAME} 不存在，正在创建...")
-    client.create_collection(
-        collection_name=COLLECTION_NAME,
-        dimension=DIMENSION,
-        auto_id=True
-    )
-else:
-    logger.info(f"集合 {COLLECTION_NAME} 已存在")
-
-client.load_collection(COLLECTION_NAME)
+milvus_client_init()
 
 # ==== 文本数据上传至向量数据库中（按大段落切分） ====
-def load_and_ingest_by_paragraph(file_path: str, overlap_ratio: float = 0.0):
+def document_to_milvus(file_path: str, overlap_ratio: float = 0.0):
     logger.info(f"[LoadFile-Para] 加载文件: {file_path}")
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"文件不存在: {file_path}")
@@ -101,7 +91,7 @@ def rag_answer(req: QueryRequest):
 @app.post("/add_doc")
 def add_doc(doc: DocInput):
     logger.info(f"[API] /add_doc 请求文本长度: {len(doc.text)}")
-    # 单条插入（不推荐）：也可以 reuse load_and_ingest_by_paragraph
+    # 单条插入（不推荐）：也可以 reuse document_to_milvus
     chunks = [doc.text.strip()]
     embeddings = get_embedding(chunks)
     to_insert = [{"vector": embeddings[0], "text": chunks[0]}]
@@ -118,18 +108,18 @@ def ingest_file(spec: BaseModel):
     fp = d.get("file_path")
     ov = d.get("overlap_ratio", 0.0)
     try:
-        load_and_ingest_by_paragraph(fp, overlap_ratio=ov)
+        document_to_milvus(fp, overlap_ratio=ov)
         return {"status": "ok", "chunks": "done"}
     except Exception as e:
         logger.error(f"[API] /ingest_file 错误: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ==== 本地测试函数（可选） ====
+# ==== 本地测试函数 ====
 def test_local_rag(data_path: str):
     logger.info("==== 本地测试开始 ====")
     try:
-        load_and_ingest_by_paragraph(data_path, overlap_ratio=0.0)
+        document_to_milvus(data_path, overlap_ratio=0.0)
         query = "夏炎老师是什么时候入党的"
         context = search(query)
         logger.info("=== 检索片段 ===")
