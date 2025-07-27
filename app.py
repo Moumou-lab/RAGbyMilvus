@@ -29,7 +29,7 @@ else:
 
 client.load_collection(COLLECTION_NAME)
 
-# ==== 文本入库（按大段落切分） ====
+# ==== 文本数据上传至向量数据库中（按大段落切分） ====
 def load_and_ingest_by_paragraph(file_path: str, overlap_ratio: float = 0.0):
     logger.info(f"[LoadFile-Para] 加载文件: {file_path}")
     if not os.path.exists(file_path):
@@ -37,8 +37,8 @@ def load_and_ingest_by_paragraph(file_path: str, overlap_ratio: float = 0.0):
     with open(file_path, "r", encoding="utf-8") as f:
         content = f.read()
 
-    # 默认按两个换行分段
-    raw_paras = [p.strip() for p in content.split("\n\n") if p.strip()]
+    # 正则匹配, 两个段落以上则划分
+    raw_paras = [p.strip() for p in re.split(r"\n{2,}", content) if p.strip()]
     logger.info(f"[LoadFile-Para] 原始段落数: {len(raw_paras)}")
 
     chunks: List[str] = []
@@ -125,10 +125,10 @@ def ingest_file(spec: BaseModel):
 
 
 # ==== 本地测试函数（可选） ====
-def test_local_rag():
+def test_local_rag(data_path: str):
     logger.info("==== 本地测试开始 ====")
     try:
-        load_and_ingest_by_paragraph("data/masters.md", overlap_ratio=0.0)
+        load_and_ingest_by_paragraph(data_path, overlap_ratio=0.0)
         query = "查询曹孚老师"
         context = search(query)
         logger.info("=== 检索片段 ===")
@@ -142,4 +142,5 @@ def test_local_rag():
 
 
 if __name__ == "__main__":
-    test_local_rag()
+    data_path = "data/test_masters.md"
+    test_local_rag(data_path)
