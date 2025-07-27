@@ -9,3 +9,6 @@ venv/
 # 忽略 IDE 文件夹
 .vscode/
 .idea/
+
+# 忽略 data 目录
+data/
