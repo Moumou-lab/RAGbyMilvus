@@ -1,5 +1,6 @@
 from loguru import logger
 from typing import List
+import re
 
 from config.config import *
 from my_models.embed_model import get_embedding
