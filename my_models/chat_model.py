@@ -14,11 +14,18 @@ def chat_generate(query: str, context: List[str]) -> str:
     if not API_KEY:
         raise RuntimeError("SILICONFLOW_API_KEY 未配置，请设置环境变量后重试")
     doc_text = "\n".join(context)
-    user_prompt = f"""你是一个智能助手，请基于以下文档内容回答问题：
+    system_prompt = """你是 “师大先生”，一个检索增强生成（RAG）助手。
+严格基于用户提供文档回答。
+禁止引入外部信息。
+回答格式简洁明了。
+"""
+
+    user_prompt = f"""
 文档内容：
 {doc_text}
-用户问题：{query}
-请结合文档内容简洁回答：
+用户问题：
+{query}
+请基于以上文档内容简洁回答：
 """
 
     headers = {
@@ -37,7 +44,7 @@ def chat_generate(query: str, context: List[str]) -> str:
         "frequency_penalty": 0.5,
         "n": 1, # 生成数量
         "messages": [
-            {"role": "system", "content": "你的名字叫‘师大先生’"},
+            {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt}
         ]
     }

@@ -119,16 +119,21 @@ def test_local_rag(data_path: str):
     logger.info("==== 本地测试开始 ====")
     try:
         document_to_milvus(data_path, overlap_ratio=0.0)
-        query = "夏炎老师是什么时候入党的"
-        context = search(query)
-        logger.info("=== 检索片段 ===")
-        for i, doc in enumerate(context, 1):
-            logger.info(f"[{i}] {doc}")
-        answer = chat_generate(query, context)
-        logger.success("=== 最终回答 ===\n" + answer)
+        while True:
+            query = input("请输入查询内容 (/bye 退出): ").strip()
+            if query.lower() == "/bye":
+                logger.info("==== 测试结束 ====")
+                break
+            context = search(query)
+            logger.info("=== 检索片段 ===")
+            for i, doc in enumerate(context, 1):
+                logger.info(f"[{i}] {doc}")
+            answer = chat_generate(query, context)
+            logger.success("=== 最终回答 ===\n" + answer)
     except Exception as e:
         logger.error(f"[Test] 本地测试失败: {e}")
-    logger.info("==== 本地测试结束 ====")
+        logger.info("==== 本地测试结束 ====")
+
 
 if __name__ == "__main__":
     data_path = "data/masters_ecnu.md"
