@@ -29,5 +29,5 @@ def get_embedding(texts: List[str]) -> List[List[float]]:
     resp.raise_for_status()
     items = resp.json().get("data", [])
     embeddings = [item["embedding"] for item in items]
-    logger.info(f"[Embedding] 返回嵌入向量数量: {len(embeddings)}")
+    logger.success(f"[Embedding] 返回嵌入向量数量: {len(embeddings)}")
     return embeddings

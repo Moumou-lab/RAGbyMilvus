@@ -53,7 +53,7 @@ def chat_generate(query: str, context: List[str]) -> str:
         resp = requests.post(CHAT_API_URL, headers=headers, json=payload, timeout=15)
         resp.raise_for_status()
         result = resp.json()["choices"][0]["message"]["content"].strip()
-        logger.info("[RAG] 获取回答成功")
+        logger.success("[RAG] 获取回答成功")
         return result
     except Exception as e:
         logger.error(f"[RAG] 大模型调用失败: {e}")

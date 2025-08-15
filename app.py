@@ -12,9 +12,19 @@ from my_models.chat_model import chat_generate
 from my_models.embed_model import get_embedding
 
 # ==== 初始化 Milvus Lite ====
-logger.add(sink=sys.stderr, level="INFO", format="{time} | {level} | {message}")
+# logger.add(sink=sys.stderr, level="INFO", format="{time} | {level} | {message}")
 logger.info("初始化 Milvus 客户端...")
 client = milvus_client_init()
+
+def _unique_preserve(seq: List[str]) -> List[str]:
+    seen = set()
+    out = []
+    for s in seq:
+        if s not in seen:
+            seen.add(s)
+            out.append(s)
+    return out
+
 
 # ==== 文本数据上传至向量数据库中（按大段落切分） ====
 def document_to_milvus(file_path: str, overlap_ratio: float = 0.0):
@@ -39,7 +49,10 @@ def document_to_milvus(file_path: str, overlap_ratio: float = 0.0):
             overlap_text = " ".join(tail + head)
             chunks.append(overlap_text)
 
-    logger.info(f"[LoadFile-Para] 总 chunk 数（含重叠）: {len(chunks)}")
+    # 去重与清洗（同一文本不重复插入；过滤空白）
+    chunks = [c.strip() for c in chunks if c and c.strip()]
+    chunks = _unique_preserve(chunks)
+    logger.info(f"[LoadFile-Para] 去重后 chunk 数: {len(chunks)}")
 
     embeddings = get_embedding(chunks)
     to_insert = [{"vector": emb, "text": txt} for emb, txt in zip(embeddings, chunks)]
@@ -61,8 +74,10 @@ def search(query: str, top_k: int = 3) -> List[str]:
     )
     hits = results[0]
     texts = [hit.entity.get("text") for hit in hits]
-    logger.info(f"[Search] 命中文档数: {len(texts)}")
-    return texts
+    # 结果去重，避免返回重复内容影响回答多样性
+    texts_unique = _unique_preserve([t for t in texts if t])[:top_k]
+    logger.info(f"[Search] 命中文档数: {len(texts_unique)}（去重前 {len(texts)}）")
+    return texts_unique
 
 
 # ==== FastAPI 接口 ====
@@ -124,7 +139,7 @@ def test_local_rag(data_path: str):
             if query.lower() == "/bye":
                 logger.info("==== 测试结束 ====")
                 break
-            context = search(query)
+            context = search(query=query, top_k=3)
             logger.info("=== 检索片段 ===")
             for i, doc in enumerate(context, 1):
                 logger.info(f"[{i}] {doc}")
