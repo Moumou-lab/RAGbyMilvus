@@ -1,13 +1,10 @@
 import os
 import re
 import sys
-import json
 from typing import List, Optional
 from loguru import logger
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-import requests
-from pymilvus import MilvusClient
 
 from config.config import *
 from client_init import milvus_client_init
@@ -17,8 +14,7 @@ from my_models.embed_model import get_embedding
 # ==== 初始化 Milvus Lite ====
 logger.add(sink=sys.stderr, level="INFO", format="{time} | {level} | {message}")
 logger.info("初始化 Milvus 客户端...")
-
-milvus_client_init()
+client = milvus_client_init()
 
 # ==== 文本数据上传至向量数据库中（按大段落切分） ====
 def document_to_milvus(file_path: str, overlap_ratio: float = 0.0):
@@ -79,6 +75,11 @@ class QueryRequest(BaseModel):
 class DocInput(BaseModel):
     text: str
 
+
+class IngestFileSpec(BaseModel):
+    file_path: str
+    overlap_ratio: Optional[float] = 0.0
+
 @app.post("/rag")
 def rag_answer(req: QueryRequest):
     logger.info(f"[API] /rag 请求，query: {req.query!r}")
@@ -100,13 +101,10 @@ def add_doc(doc: DocInput):
     return {"status": "ok"}
 
 @app.post("/ingest_file")
-def ingest_file(spec: BaseModel):
-    """
-    接收参数 { “file_path”: str, “overlap_ratio”: float }
-    """
-    d = spec.dict()
-    fp = d.get("file_path")
-    ov = d.get("overlap_ratio", 0.0)
+def ingest_file(spec: IngestFileSpec):
+    """接收参数 {file_path: str, overlap_ratio: float} 并进行入库。"""
+    fp = spec.file_path
+    ov = spec.overlap_ratio or 0.0
     try:
         document_to_milvus(fp, overlap_ratio=ov)
         return {"status": "ok", "chunks": "done"}

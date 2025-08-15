@@ -13,6 +13,8 @@ def get_embedding(texts: List[str]) -> List[List[float]]:
     """
     批量生成嵌入向量。texts 是字符串列表。
     """
+    if not API_KEY:
+        raise RuntimeError("SILICONFLOW_API_KEY 未配置，请设置环境变量后重试")
     logger.info(f"[Embedding] 批量生成嵌入，数量: {len(texts)}")
     headers = {
         "Authorization": f"Bearer {API_KEY}",

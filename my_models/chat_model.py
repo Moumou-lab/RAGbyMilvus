@@ -11,6 +11,8 @@ from config.config import *
 # ==== RAG 模型回答 ====
 def chat_generate(query: str, context: List[str]) -> str:
     logger.info(f"[RAG] 发送提问: {query}")
+    if not API_KEY:
+        raise RuntimeError("SILICONFLOW_API_KEY 未配置，请设置环境变量后重试")
     doc_text = "\n".join(context)
     user_prompt = f"""你是一个智能助手，请基于以下文档内容回答问题：
 文档内容：
@@ -49,5 +51,4 @@ def chat_generate(query: str, context: List[str]) -> str:
     except Exception as e:
         logger.error(f"[RAG] 大模型调用失败: {e}")
         raise RuntimeError("大模型调用失败")
-
 
